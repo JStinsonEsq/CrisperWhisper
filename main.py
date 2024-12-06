@@ -15,6 +15,10 @@ from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 # why you no import relative class file python?!
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from segmenter import AudioSegmenter
+from huggingface_hub import login
+HF_TOKEN = os.environ.get('HF_TOKEN')
+login(token=HF_TOKEN)
+
 
 app = FastAPI()
 
@@ -108,7 +112,7 @@ async def transcribe_audio(request: TranscriptionRequest):
     )
 
 
-    segmenter = AudioSegmenter(max_segment_length=25.0)
+    segmenter = AudioSegmenter(max_segment_length=25.0, face_hugger_token=HF_TOKEN)
     segments = segmenter.segment_audio(flac_audio_path)
 
     trans_text = ""
@@ -120,8 +124,8 @@ async def transcribe_audio(request: TranscriptionRequest):
         trans_chunks = trans_chunks + crisper_whisper_result.get('chunks')
         #print(crisper_whisper_result)
 
-    os.remove(f"./{original_audio_path}")
-    os.remove(f"./{flac_audio_path}")
+    os.remove(original_audio_path)
+    os.remove(flac_audio_path)
 
     print(trans_text)
     print(trans_chunks)

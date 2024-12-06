@@ -14,7 +14,7 @@ class AudioSegmenter:
 
     def __init__(self, 
                  vad_model: str = "pyannote/voice-activity-detection",
-                 face_hugger_token: str = "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",
+                 face_hugger_token: str = "",
                  max_segment_length: float = 30.0):
         """
         Initialize the AudioSegmenter.
