@@ -16,7 +16,7 @@ from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from segmenter import AudioSegmenter
 from huggingface_hub import login
-HF_TOKEN = os.environ.get('HF_TOKEN')
+HF_TOKEN = os.environ['HF_TOKEN']
 login(token=HF_TOKEN)
 
 
@@ -104,15 +104,15 @@ async def transcribe_audio(request: TranscriptionRequest):
         model=model,
         tokenizer=processor.tokenizer,
         feature_extractor=processor.feature_extractor,
-        chunk_length_s=25,
+        chunk_length_s=30,
         batch_size=16,
         return_timestamps='word',
         torch_dtype=torch_dtype,
-        device=device,
+        device=device
     )
 
 
-    segmenter = AudioSegmenter(max_segment_length=25.0, face_hugger_token=HF_TOKEN)
+    segmenter = AudioSegmenter(max_segment_length=30.0, face_hugger_token=HF_TOKEN)
     segments = segmenter.segment_audio(flac_audio_path)
 
     trans_text = ""

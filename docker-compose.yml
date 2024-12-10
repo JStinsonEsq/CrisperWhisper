@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  app:
+    # Build the image using the Dockerfile in the current directory
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    # Load environment variables from .env file
+    env_file:
+      - .env
+    
+    # Optionally, publish a port if your app listens on one
+    ports:
+      - "8000:8000"
+    
+    # Enable GPU support (requires NVIDIA container runtime)
+    # This approach works with the old `runtime` parameter.
+    # For newer versions of Compose or if runtime key is deprecated,
+    # see the alternative approach below.
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    # (Optional) Define a command if your Dockerfile doesn't have a default CMD
+    # command: ["node", "app.js"]
+
+    # (Optional) Specify a container name if desired
+    # container_name: my_app_container
+    
