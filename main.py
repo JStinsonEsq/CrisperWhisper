@@ -56,37 +56,6 @@ async def transcribe_audio(request: TranscriptionRequest):
         raise HTTPException(status_code=400, detail=f"Audio transcoding failed: {e}")
 
 
-    def adjust_pauses_for_hf_pipeline_output(pipeline_output, split_threshold=0.12):
-        """
-        Adjust pause timings by distributing pauses up to the threshold evenly between adjacent words.
-        """
-
-        adjusted_chunks = pipeline_output["chunks"].copy()
-
-        for i in range(len(adjusted_chunks) - 1):
-            current_chunk = adjusted_chunks[i]
-            next_chunk = adjusted_chunks[i + 1]
-
-            current_start, current_end = current_chunk["timestamp"]
-            next_start, next_end = next_chunk["timestamp"]
-            pause_duration = next_start - current_end
-
-            if pause_duration > 0:
-                if pause_duration > split_threshold:
-                    distribute = split_threshold / 2
-                else:
-                    distribute = pause_duration / 2
-
-                # Adjust current chunk end time
-                adjusted_chunks[i]["timestamp"] = (current_start, current_end + distribute)
-
-                # Adjust next chunk start time
-                adjusted_chunks[i + 1]["timestamp"] = (next_start - distribute, next_end)
-        pipeline_output["chunks"] = adjusted_chunks
-
-        return pipeline_output
-
-
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
@@ -106,36 +75,27 @@ async def transcribe_audio(request: TranscriptionRequest):
         feature_extractor=processor.feature_extractor,
         chunk_length_s=30,
         batch_size=16,
-        return_timestamps='word',
         torch_dtype=torch_dtype,
         device=device
     )
-
 
     segmenter = AudioSegmenter(max_segment_length=30.0, face_hugger_token=HF_TOKEN)
     segments = segmenter.segment_audio(flac_audio_path)
 
     trans_text = ""
-    trans_chunks = []
     for sample in segments:
         hf_pipeline_output = pipe(sample)
-        crisper_whisper_result = adjust_pauses_for_hf_pipeline_output(hf_pipeline_output)
-        trans_text += ' ' + crisper_whisper_result.get('text')
-        trans_chunks = trans_chunks + crisper_whisper_result.get('chunks')
-        #print(crisper_whisper_result)
+        trans_text += ' ' + hf_pipeline_output.get('text')
 
     os.remove(original_audio_path)
     os.remove(flac_audio_path)
 
     print(trans_text)
-    print(trans_chunks)
     
     return {
-        "transcript": trans_text,
-        "timestamps": trans_chunks
+        "transcript": trans_text
     }
     
-
 
 # Run server if executed directly
 if __name__ == "__main__":
